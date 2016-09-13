@@ -2,12 +2,17 @@ package com.ihomefinder.api.resource;
 
 import java.util.Date;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
-import com.ihomefinder.api.ResourceWrapper;
 import com.ihomefinder.api.exception.UnsavedResourceException;
 
 public class OpenHomeReportSignupRequest extends Resource {
 	
+	public OpenHomeReportSignupRequest(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -49,7 +54,7 @@ public class OpenHomeReportSignupRequest extends Resource {
 	}
 	
 	public OpenHomeReportSignupRequest setSubscriber(Subscriber subscriber) {
-		if(ResourceWrapper.getInstance(subscriber).isTransient()) {
+		if(subscriber.isTransient()) {
 			throw new UnsavedResourceException(subscriber);
 		}
 		this.setSubscriberId(subscriber.getId());
@@ -62,7 +67,7 @@ public class OpenHomeReportSignupRequest extends Resource {
 	}
 	
 	public OpenHomeReportSignupRequest setOpenHomeReport(OpenHomeReport openHomeReport) {
-		if(ResourceWrapper.getInstance(openHomeReport).isTransient()) {
+		if(openHomeReport.isTransient()) {
 			throw new UnsavedResourceException(openHomeReport);
 		}
 		this.setOpenHomeReportId(openHomeReport.getId());
@@ -71,14 +76,13 @@ public class OpenHomeReportSignupRequest extends Resource {
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"subscriberId",
 			"openHomeReportId",
-			"createdOn",
-			"message",
-		};
+			"createdOn"
+		);
 	}
 	
 }

@@ -8,12 +8,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-public class Query {
+public class Query implements Cloneable {
 	
 	protected Set<String> fields = new HashSet<>();
 	protected Map<String, Object> where = new HashMap<>();
-	protected Integer offset;
 	protected Integer limit;
+	protected Integer offset;
 	
 	public Query select(String ...fields) {
 		this.fields.addAll(Arrays.asList(fields));
@@ -25,7 +25,7 @@ public class Query {
 		return this;
 	}
 	
-	public Query equal(String fieldName, Object fieldValue) {
+	public Query where(String fieldName, Object fieldValue) {
 		this.where.put(fieldName, fieldValue);
 		return this;
 	}
@@ -36,13 +36,12 @@ public class Query {
 	}
 	
 	public Query example(Resource resource) {
-		ResourceWrapper wrapper = ResourceWrapper.getInstance(resource);
-		Map<String, Object> fields = wrapper.getAllFieldsValues();
+		Map<String, Object> fields = resource.getHydratedFieldsValues();
 		for(Entry<String, Object> entry : fields.entrySet()) {
 			String fieldName = entry.getKey();
 			Object fieldValue = entry.getValue();
 			if(fieldValue != null) {
-				this.equal(fieldName, fieldValue);
+				this.where(fieldName, fieldValue);
 			}
 
 		}
@@ -59,7 +58,9 @@ public class Query {
 		return this;
 	}
 	
-	public void loadRequest(Request request) {
+	
+	
+	public void loadRequest(HttpRequest request) {
 		request.setParameters(this.where);
 		if(this.offset != null) {
 			request.setParameter("offset", this.offset);
@@ -71,5 +72,15 @@ public class Query {
 			request.setParameter("fields", String.join(",", this.fields));
 		}
 	}
+//	
+//	@Override
+//	public Query clone() {
+//		Query result = new Query();
+//		result.fields.addAll(this.fields);
+//		result.where.putAll(this.where);
+//		result.offset = this.offset;
+//		result.limit = this.limit;
+//		return result;
+//	}
 	
 }

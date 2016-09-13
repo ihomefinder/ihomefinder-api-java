@@ -1,100 +1,84 @@
 package com.ihomefinder.api;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class ResourceManager {
 	
+	private static ResourceManager INSTANCE = new ResourceManager();
 	private List<Resource> resources = new ArrayList<>();
-	private Map<String, Resource> persistedResources = new HashMap<>();
-	private static ResourceManager instance;
 	
 	private ResourceManager() {
 		
 	}
 	
 	public static ResourceManager getInstance() {
-		if(instance == null) {
-			instance = new ResourceManager();
-		}
-		return instance;
+		return INSTANCE;
 	}
 	
 	public void addResource(Resource resource) {
 		this.resources.add(resource);
 	}
 	
-	public void setPersistedResource(String href, Resource resource) {
-		this.persistedResources.put(href, resource);
-	}
-	
 	public Resource getPersistedResource(String href) {
-		return this.persistedResources.get(href);
+		Resource result = null;
+		if(href != null && !href.isEmpty()) {
+			for(Resource resource : resources) {
+				if(href.equals(resource.getUrl())) {
+					result = resource;
+				}
+			}
+		}
+		return result;
 	}
 	
-	public boolean hasPersistedResource(String href) {
-		return this.persistedResources.containsKey(href);
-	}
-	
-	public <ValueType> ValueType load(Class<ValueType> class_, Object object) {
-		ValueType resource = null;
-		if(object == null) {
+	public <T> T getOrCreateInstance(Authentication auth, Class<T> class_, Object value) {
+		T result = null;
+		if(value == null) {
 			
 		} else if(String.class.equals(class_)) {
-			resource = (ValueType) object;
+			result = (T) value;
 		} else if(Integer.class.equals(class_)) {
-			resource = (ValueType) object;
+			result = (T) value;
 		} else if(Boolean.class.equals(class_)) {
-			resource = (ValueType) object;
+			result = (T) value;
 		} else if(Resource.class.isAssignableFrom(class_)) {
-			Map<String, Object> map = (Map<String, Object>) object;
-			Class<? extends Resource> foo = (Class<? extends Resource>) class_;
-			resource = (ValueType) load(foo, map);
+			Resource resource = null;
+			Map<String, Object> data = (Map<String, Object>) value;
+			String href = getHref(data);
+			resource = this.getPersistedResource(href);
+			if(resource == null) {
+				resource = createResource((Class<Resource>) class_, auth);
+			}
+			resource.hydrate(data);
+			result = (T) resource;
 		}
-		return resource;
+		return result;
 	}
 	
-	public <T extends Resource> T load(Class<T> class_, Map<String, Object> map) {
-		T resource = null;
-		List<Map<String, Object>> links = (List<Map<String, Object>>) map.get("links");
+	private String getHref(Map<String, Object> data) {
+		String href = null;
+		List<Map<String, Object>> links = (List<Map<String, Object>>) data.get("links");
 		for(Map<String, Object> link : links) {
 			if("self".equals(link.get("rel"))) {
-				String href = (String) link.get("href");
-				if(this.hasPersistedResource(href)) {
-					resource = (T) this.getPersistedResource(href);
-				} else {
-					try {
-						resource = class_.newInstance();
-					} catch (InstantiationException | IllegalAccessException e) {
-						throw new RuntimeException(e);
-					}
-					ResourceWrapper wrapper = ResourceWrapper.getInstance(resource);
-					for(Entry<String, Object> entry : map.entrySet()) {
-						String name = entry.getKey();
-						Object value = entry.getValue();
-						if(!wrapper.isHydratedField(name)) {
-							wrapper.setHydratedField(name, value);
-						}
-					}
-					wrapper.setTransient(false);
-					this.setPersistedResource(href, resource);
-				}
+				href = (String) link.get("href");
 				break;
 			}
 		}
-		return resource;
+		return href;
 	}
 	
-	public void save() {
-		for(Resource resource : this.resources) {
-			ResourceWrapper wrapper = ResourceWrapper.getInstance(resource);
-			if(!wrapper.isTransient()) {
-				wrapper.save();
-			}
+	private <T extends Resource> T createResource(Class<T> class_, Authentication auth) {
+		T result = null;
+		try {
+			Constructor<T> constructor = class_.getConstructor(Authentication.class);
+			result = constructor.newInstance(auth);
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
 		}
+		return result;
 	}
 	
 }

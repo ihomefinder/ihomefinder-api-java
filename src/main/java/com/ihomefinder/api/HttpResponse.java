@@ -8,14 +8,13 @@ import org.json.JSONObject;
 
 import com.ihomefinder.api.exception.ApiException;
 import com.ihomefinder.api.exception.HttpException;
-import com.mashape.unirest.http.HttpResponse;
 
-public class Response {
+public class HttpResponse {
 	
-	private final HttpResponse<String> response;
+	private final com.mashape.unirest.http.HttpResponse<String> response;
 	private Map<String, Object> object;
 	
-	public Response(HttpResponse<String> response) {
+	public HttpResponse(com.mashape.unirest.http.HttpResponse<String> response) {
 		this.response = response;
 		String body = response.getBody();
 		try {
@@ -31,10 +30,7 @@ public class Response {
 				}
 			}
 		} catch (JSONException e) {
-			int status = response.getStatus();
-			if(status < 200 || status > 299) {
-				throw new HttpException("Status " + status);
-			}
+			throw new HttpException(e);
 		}
 	}
 	

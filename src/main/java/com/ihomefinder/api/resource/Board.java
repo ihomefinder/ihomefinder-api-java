@@ -1,9 +1,15 @@
 package com.ihomefinder.api.resource;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
 
 public class Board extends Resource {
 	
+	public Board(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -32,12 +38,12 @@ public class Board extends Resource {
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"name",
-			"abbreviation",
-		};
+			"abbreviation"
+		);
 	}
 	
 }

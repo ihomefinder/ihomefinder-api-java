@@ -1,9 +1,15 @@
 package com.ihomefinder.api.resource;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
 
 public class Listing extends Resource {
 	
+	public Listing(Authentication auth) {
+		super(auth);
+	}
+
 	public String getId() {
 		return this.getter("id", String.class);
 	}
@@ -63,15 +69,15 @@ public class Listing extends Resource {
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"listingNumber",
 			"boardId",
 			"bedrooms",
 			"fullBathrooms",
-			"partialBathrooms",
-		};
+			"partialBathrooms"
+		);
 	}
 	
 }

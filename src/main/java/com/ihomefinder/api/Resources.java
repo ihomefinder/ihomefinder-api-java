@@ -2,208 +2,111 @@ package com.ihomefinder.api;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.ihomefinder.api.exception.ApiException;
-
-public class Resources<E extends Resource> extends Resource implements Collection<E> {
+public abstract class Resources<E extends Resource> extends Resource implements Iterable<E> {
 	
-	private Class<E> elementClass;
-	private ArrayList<E> results = new ArrayList<>();
-	private Query query;
-	private boolean initialized;
+	private final Class<E> elementClass = (Class<E>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+	private final ArrayList<E> results = new ArrayList<>();
 	
-	public Resources() {
-		super();
-		this.elementClass = (Class<E>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+	private Query query = setQueryDefaults(new Query());
+	
+	public Resources(Authentication auth) {
+		super(auth);
 	}
 	
 	protected Class<E> getElementClass() {
 		return this.elementClass;
 	}
-	
-	@Override
-	public boolean add(E e) {
-		return results.add(e);
-	}
-
-	@Override
-	public boolean addAll(Collection<? extends E> c) {
-		for(E e : c) {
-			add(e);
-		}
-		return true;
-	}
-
-	@Override
-	public void clear() {
-		removeAll(this);
-	}
-
-	@Override
-	public boolean contains(Object o) {
-		if(!getElementClass().isInstance(o)) {
-			
-		}
-		return false;
-	}
-
-	@Override
-	public boolean containsAll(Collection<?> c) {
-		boolean result = true;
-		for(Object e : c) {
-			if(!contains(e)) {
-				result = false;
-				break;
-			}
-		}
-		return result;
-	}
-
-	@Override
-	public boolean isEmpty() {
-		initialize();
-		return size() == 0;
-	}
 
 	@Override
 	public Iterator<E> iterator() {
-		return new Iterator<E>() {
-
+		Resources<E> self = this;
+		Iterator<E> iterator = new Iterator<E>() {
+			
+			private int cursor = 0;
+			
 			@Override
 			public boolean hasNext() {
-				// TODO Auto-generated method stub
-				return false;
+				boolean result = false;
+				if(cursor < size()) {
+					result = true;
+				}
+				return result;
 			}
 
 			@Override
 			public E next() {
-				// TODO Auto-generated method stub
-				return null;
+				E result = null;
+				if(cursor >= results.size() && size() > results.size()) {
+					self.query
+						.offset(cursor)
+					;
+					self.init(getUrl(), self.query);
+				}
+				if(cursor < results.size()) {
+					result = results.get(cursor);
+				}
+				cursor++;
+				return result;
 			}
 		};
+		return iterator;
 	}
 
-	@Override
-	public boolean remove(Object o) {
-		boolean result = false;
-		while(result) {
-			result = results.remove(o);
-			if(!result) {
-				if(initialized) {
-					break;
-				} else {
-					initialize();
-				}
-			}
-		}
-		return result;
-	}
-
-	@Override
-	public boolean removeAll(Collection<?> c) {
-		boolean result = false;
-		for(Object e : c) {
-			if(remove(c)) {
-				result = true;
-			}
-		}
-		return result;
-	}
-
-	@Override
-	public boolean retainAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
 	public int size() {
-		return getter("total", Integer.class);
+		Integer result = getter("total", Integer.class);
+		if(result == null) {
+			result = 0;
+		}
+		return result;
 	}
-
-	@Override
-	public Object[] toArray() {
-		// TODO Auto-generated method stub
-		return null;
+	
+	protected void init(String url, Query query) {
+		this.query = setQueryDefaults(query);
+		init(url);
 	}
 	
 	@Override
-	public <T> T[] toArray(T[] a) {
-		// TODO Auto-generated method stub
-		return null;
+	protected void init(String url) {
+		Map<String, Object> object = new HttpRequest(auth)
+			.setUrl(url)
+			.setMethod("GET")
+			.addQuery(query)
+			.getResponse()
+			.getData()
+		;
+		this.hydrate(object);
 	}
 	
-	private void initialize() {
-		if(!this.initialized) {
-			this.initialized = true;
-			String href = this.wrapper.getHref();
-			Map<String, Object> object = new Request()
-				.setUrl(href)
-				.setMethod("GET")
-				.addQuery(this.query)
-				.getResponse()
-				.getData()
-			;
-			this.wrapper.hydrate(object);
-			List<Map<String, Object>> results = this.getter("results", ArrayList.class);
-			if(results != null) {
-				for(Map<String, Object> result : results) {
-					E resource = ResourceManager.getInstance().load(this.getElementClass(), result);
-					this.results.add(resource);
-				}
+	@Override
+	protected void hydrate(Map<String, Object> data) {
+		super.hydrate(data);
+		List<Map<String, Object>> results = (List<Map<String, Object>>) data.get("results");
+		if(results != null) {
+			for(Map<String, Object> result : results) {
+				E resource = ResourceManager.getInstance().getOrCreateInstance(auth, this.getElementClass(), result);
+				this.results.add(resource);
 			}
 		}
 	}
 	
-	private void create(Resource resource) {
-		ResourceWrapper wrapper = ResourceWrapper.getInstance(resource);
-		if(wrapper.isTransient()) {
-			String url = this.wrapper.getHref();
-			Query query = new Query()
-				.select(wrapper.getDirtyFields())
-				.equal(wrapper.getDirtyFieldsValues())
-			;
-			Map<String, Object> object = new Request()
-				.setUrl(url)
-				.setMethod("POST")
-				.addQuery(query)
-				.getResponse()
-				.getData()
-			;
-			wrapper.hydrate(object);
-		} else if(wrapper.hasDirtyFields()) {
-		
+	private Query setQueryDefaults(Query query) {
+		if(query == null) {
+			query = new Query();
 		}
-	}
-	
-	public Resources<E> query(Query query) {
-		if(this.initialized) {
-			throw new ApiException("Cannot change query after object is accessed");
-		}
-		this.query = query;
-		return this;
+		query
+			.select("*")
+			.limit(50)
+		;
+		return query;
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
-			"results",
-		};
-	}
-
-	@Override
-	public String toString() {
-		this.initialize();
-		Map<String, Object> result = new HashMap<>();
-		result.put("results", results);
-		result.put("results", results);
-		result.put("results", results);
-		return result.toString();
+	protected Fields getFieldNames() {
+		return null;
 	}
 	
 }

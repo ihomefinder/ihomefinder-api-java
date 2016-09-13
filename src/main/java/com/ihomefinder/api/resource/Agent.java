@@ -1,11 +1,16 @@
 package com.ihomefinder.api.resource;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
-import com.ihomefinder.api.ResourceWrapper;
 import com.ihomefinder.api.exception.UnsavedResourceException;
 
 public class Agent extends Resource {
 	
+	public Agent(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -42,12 +47,12 @@ public class Agent extends Resource {
 		return this;
 	}
 	
-	public String getEmail() {
-		return this.getter("email", String.class);
+	public String getEmailAddress() {
+		return this.getter("emailAddress", String.class);
 	}
 	
-	public Agent setEmail(String email) {
-		this.setter("email", email);
+	public Agent setEmailAddress(String emailAddress) {
+		this.setter("emailAddress", emailAddress);
 		return this;
 	}
 	
@@ -78,12 +83,12 @@ public class Agent extends Resource {
 		return this;
 	}
 	
-	public String getZip() {
-		return this.getter("zip", String.class);
+	public String getPostalCode() {
+		return this.getter("postalCode", String.class);
 	}
 	
-	public Agent setZip(String zip) {
-		this.setter("zip", zip);
+	public Agent setPostalCode(String postalCode) {
+		this.setter("postalCode", postalCode);
 		return this;
 	}
 	
@@ -92,7 +97,7 @@ public class Agent extends Resource {
 	}
 	
 	public Agent setOffice(Office office) {
-		if(ResourceWrapper.getInstance(office).isTransient()) {
+		if(office.isTransient()) {
 			throw new UnsavedResourceException(office);
 		}
 		this.setOfficeId(office.getId());
@@ -101,18 +106,18 @@ public class Agent extends Resource {
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"officeId",
 			"firstName",
 			"lastName",
-			"email",
+			"emailAddress",
 			"address",
 			"city",
 			"state",
-			"zip",
-		};
+			"postalCode"
+		);
 	}
 	
 }

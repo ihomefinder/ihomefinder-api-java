@@ -2,12 +2,17 @@ package com.ihomefinder.api.resource;
 
 import java.util.Date;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
-import com.ihomefinder.api.ResourceWrapper;
 import com.ihomefinder.api.exception.UnsavedResourceException;
 
 public class ScheduleShowingRequest extends Resource {
 	
+	public ScheduleShowingRequest(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -76,7 +81,7 @@ public class ScheduleShowingRequest extends Resource {
 	}
 	
 	public ScheduleShowingRequest setSubscriber(Subscriber subscriber) {
-		if(ResourceWrapper.getInstance(subscriber).isTransient()) {
+		if(subscriber.isTransient()) {
 			throw new UnsavedResourceException(subscriber);
 		}
 		this.setSubscriberId(subscriber.getId());
@@ -89,7 +94,7 @@ public class ScheduleShowingRequest extends Resource {
 	}
 	
 	public ScheduleShowingRequest setListing(Listing listing) {
-		if(ResourceWrapper.getInstance(listing).isTransient()) {
+		if(listing.isTransient()) {
 			throw new UnsavedResourceException(listing);
 		}
 		this.setListingId(listing.getId());
@@ -98,16 +103,16 @@ public class ScheduleShowingRequest extends Resource {
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"subscriberId",
 			"listingId",
 			"createdOn",
 			"preferableOn",
 			"alternativeOn",
-			"message",
-		};
+			"message"
+		);
 	}
 	
 }

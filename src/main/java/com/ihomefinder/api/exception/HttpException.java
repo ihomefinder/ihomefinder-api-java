@@ -7,5 +7,9 @@ public class HttpException extends ApiException {
 	public HttpException(String message) {
 		super(message);
 	}
+
+	public HttpException(Throwable e) {
+		super(e);
+	}
 	
 }

@@ -1,11 +1,26 @@
 package com.ihomefinder.api.resource;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
+import com.ihomefinder.api.Query;
 import com.ihomefinder.api.Resource;
-import com.ihomefinder.api.ResourceWrapper;
+import com.ihomefinder.api.Savable;
+import com.ihomefinder.api.Url;
 import com.ihomefinder.api.exception.UnsavedResourceException;
 
-public class Subscriber extends Resource {
+public class Subscriber extends Resource implements Savable<Subscriber> {
 	
+	public static Subscriber getById(Authentication auth, Integer id) {
+		Query query = new Query()
+			.where("id", id)
+		;
+		return Subscribers.get(auth, query).iterator().next();
+	}
+	
+	public Subscriber(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -51,12 +66,12 @@ public class Subscriber extends Resource {
 		return this;
 	}
 	
-	public String getEmail() {
-		return this.getter("email", String.class);
+	public String getEmailAddress() {
+		return this.getter("emailAddress", String.class);
 	}
 	
-	public Subscriber setEmail(String email) {
-		this.setter("email", email);
+	public Subscriber setEmailAddress(String emailAddress) {
+		this.setter("emailAddress", emailAddress);
 		return this;
 	}
 	
@@ -105,18 +120,15 @@ public class Subscriber extends Resource {
 		return this;
 	}
 	
-	public String getZip() {
-		return this.getter("zip", String.class);
+	public String getPostalCode() {
+		return this.getter("postalCode", String.class);
 	}
 	
-	public Subscriber setZip(String zip) {
-		this.setter("zip", zip);
+	public Subscriber setPostalCode(String postalCode) {
+		this.setter("postalCode", postalCode);
 		return this;
 	}
 	
-	/**
-	 * @return \Ihomefinder\Api\Client
-	 */
 	public Client getClient() {
 		return this.getter("client", Client.class);
 	}
@@ -126,15 +138,12 @@ public class Subscriber extends Resource {
 		return this;
 	}
 	
-	/**
-	 * @return \Ihomefinder\Api\Agent
-	 */
 	public Agent getAgent() {
 		return this.getter("agent", Agent.class);
 	}
 	
 	public Subscriber setAgent(Agent agent) {
-		if(ResourceWrapper.getInstance(agent).isTransient()) {
+		if(agent.isTransient()) {
 			throw new UnsavedResourceException(agent);
 		}
 		this.setAgentId(agent.getId());
@@ -143,21 +152,27 @@ public class Subscriber extends Resource {
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	public Subscriber save() {
+		saveHelper(Url.SUBSCRIBERS);
+		return this;
+	}
+	
+	@Override
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"clientId",
 			"agentId",
 			"firstName",
 			"lastName",
-			"email",
+			"emailAddress",
 			"password",
 			"phone",
 			"address",
 			"city",
 			"state",
-			"zip",
-		};
+			"postalCode"
+		);
 	}
 	
 }

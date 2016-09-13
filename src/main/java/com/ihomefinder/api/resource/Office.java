@@ -1,9 +1,15 @@
 package com.ihomefinder.api.resource;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
 
 public class Office extends Resource {
 	
+	public Office(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -22,12 +28,12 @@ public class Office extends Resource {
 		return this;
 	}
 	
-	public String getEmail() {
-		return this.getter("email", String.class);
+	public String getEmailAddress() {
+		return this.getter("emailAddress", String.class);
 	}
 	
-	public Office setEmail(String email) {
-		this.setter("email", email);
+	public Office setEmailAddress(String emailAddress) {
+		this.setter("emailAddress", emailAddress);
 		return this;
 	}
 	
@@ -58,33 +64,30 @@ public class Office extends Resource {
 		return this;
 	}
 	
-	public String getZip() {
-		return this.getter("zip", String.class);
+	public String getPostalCode() {
+		return this.getter("postalCode", String.class);
 	}
 	
-	public Office setZip(String zip) {
-		this.setter("zip", zip);
+	public Office setPostalCode(String postalCode) {
+		this.setter("postalCode", postalCode);
 		return this;
 	}
 	
-	/**
-	 * @return \Ihomefinder\Api\Resource\Agents
-	 */
 	public Agents getAgents() {
 		return this.getter("agents", Agents.class);
 	}
 	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"name",
-			"email",
+			"emailAddress",
 			"address",
 			"city",
 			"state",
-			"zip",
-		};
+			"postalCode"
+		);
 	}
 	
 }

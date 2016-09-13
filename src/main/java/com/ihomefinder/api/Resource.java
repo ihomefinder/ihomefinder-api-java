@@ -1,111 +1,191 @@
 package com.ihomefinder.api;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.ihomefinder.api.exception.ResourceUnavailableException;
+import java.util.Set;
 
 public abstract class Resource {
 	
-	protected ResourceWrapper wrapper;
+	protected final Authentication auth;
+	private Map<String, Object> hydratedFields = new HashMap<>();
+	private Set<String> dirtyFields = new HashSet<>();
 	
-	protected Map<String, Object> requestParameters = new HashMap<>();
+	protected abstract Collection<String> getFieldNames();
 	
-	protected abstract String[] getFieldNames();
-	
-	public Resource() {
-		this.wrapper = ResourceWrapper.getInstance(this);
+	public Resource(Authentication auth) {
+		this.auth = auth;
+		ResourceManager.getInstance().addResource(this);
 	}
-	
+
 	protected <T> T getter(String name, Class<T> class_) {
-		if(!wrapper.isHydratedField(name)) {
-			wrapper.hydrate(null);
+		if(!isHydratedField(name)) {
+			init(getUrl());
 		}
-		Object value = wrapper.getHydratedField(name);
-		if(value == null) {
-			throw new ResourceUnavailableException(null);
-		}
+		Object value = getHydratedField(name);
 		if(!class_.isInstance(value)) {
-			value = ResourceManager.getInstance().load(class_, value);
-			wrapper.setHydratedField(name, value);
+			value = ResourceManager.getInstance().getOrCreateInstance(auth, class_, value);
+			setHydratedField(name, value);
 		}
 		return (T) value;
 	}
 	
 	protected void setter(String name, Object value) {
-		if(wrapper.getHydratedField(name) != null && !wrapper.getHydratedField(name).equals(value)) {
-			wrapper.addDirtyField(name);
-			wrapper.setHydratedField(name, value);
+		if(getHydratedField(name) == null || (getHydratedField(name) != null && !getHydratedField(name).equals(value))) {
+			addDirtyField(name);
+			setHydratedField(name, value);
 		}
 	}
 	
-	protected void hydrate(Map<String, Object> object) {
-		if(object == null) {
-			String url = wrapper.getHref();
-			if(url != null) {
-				object = new Request()
-					.setUrl(url)
-					.setMethod("GET")
-					.setParameters(this.requestParameters)
-					.getResponse()
-					.getData()
-				;
-			}
-		}
-		if(object != null) {
-			//Hydrate fields with value from object
-			for(Entry<String, Object> entry : object.entrySet()) {
-				String name = entry.getKey();
-				Object value = entry.getValue();
-				if(!wrapper.isDirtyField(name)) {
-					wrapper.setHydratedField(name, value);
-				}
-			}
-			//Hydrate remaining known fields with null. This prevents repeated attempts to hydrate object.
-			for(String name : this.wrapper.getFieldNames()) {
-				if(!wrapper.isDirtyField(name)) {
-					if(!object.containsKey(name)) {
-						wrapper.setHydratedField(name, null);
+	protected void init(String url) {
+		if(url != null) {
+			Map<String, Object> data = new HttpRequest(auth)
+				.setUrl(url)
+				.setMethod("GET")
+				.getResponse()
+				.getData()
+			;
+			hydrate(data);
+			//Hydrate known fields with null. This prevents repeated attempts to hydrate object.
+			if(getFieldNames() != null) {
+				for(String name : getFieldNames()) {
+					if(!isDirtyField(name)) {
+						if(!data.containsKey(name)) {
+							setHydratedField(name, null);
+						}
 					}
 				}
 			}
-			wrapper.setTransient(false);
 		}
 	}
 	
-	protected void save() {
-		if(wrapper.hasDirtyFields()) {
-			String url = this.wrapper.getHref();
+	protected void hydrate(Map<String, Object> data) {
+		if(data != null) {
+			for(Entry<String, Object> entry : data.entrySet()) {
+				String name = entry.getKey();
+				Object value = entry.getValue();
+				if(!isDirtyField(name)) {
+					setHydratedField(name, value);
+				}
+			}
+		}
+	}
+	
+	private Set<String> getDirtyFields() {
+		return dirtyFields;
+	}
+	
+	private boolean hasDirtyFields() {
+		return !dirtyFields.isEmpty();
+	}
+	
+	private void addDirtyField(String name) {
+		dirtyFields.add(name);
+	}
+	
+	private boolean isDirtyField(String name) {
+		return dirtyFields.contains(name);
+	}
+	
+	private Map<String, Object> getDirtyFieldsValues() {
+		Map<String, Object> results = new HashMap<>();
+		Set<String> names = this.getDirtyFields();
+		for(String name : names) {
+			Object value = this.getHydratedField(name);
+			results.put(name, value);
+		}
+		return results;
+	}
+	
+	private Set<String> getHydratedFields() {
+		return hydratedFields.keySet();
+	}
+	
+	private void setHydratedField(String name, Object value) {
+		this.hydratedFields.put(name, value);
+	}
+	
+	private Object getHydratedField(String name) {
+		Object result = null;
+		if(this.isHydratedField(name)) {
+			result = this.hydratedFields.get(name);
+		}
+		return result;
+	}
+	
+	private boolean isHydratedField(String name) {
+		return getHydratedFields().contains(name);
+	}
+	
+	protected Map<String, Object> getHydratedFieldsValues() {
+		Map<String, Object> results = new HashMap<>();
+		Set<String> names = this.getHydratedFields();
+		for(String name : names) {
+			Object value = this.getHydratedField(name);
+			results.put(name, value);
+		}
+		return results;
+	}
+	
+	private List<Map<String, Object>> getLinks() {
+		return (List<Map<String, Object>>) this.getHydratedField("links");
+	}
+	
+	protected String getUrl() {
+		String result = null;
+		List<Map<String, Object>> links = this.getLinks();
+		if(links != null) {
+			for(Map<String, Object> link : links) {
+				if("self".equals(link.get("rel"))) {
+					result = (String) link.get("href");
+					break;
+				}
+			}
+		}
+		return result;
+	}
+	
+	public boolean isTransient() {
+		return getUrl() == null;
+	}
+	
+	protected void saveHelper(String createUrl) {
+		if(hasDirtyFields()) {
+			String url = null;
+			String method = null;
+			if(isTransient()) {
+				url = createUrl;
+				method = "POST";
+			} else {
+				url = this.getUrl();
+				method = "PUT";
+			}
 			Query query = new Query()
-				.select(this.wrapper.getDirtyFields())
-				.equal(this.wrapper.getDirtyFieldsValues())
+				.select(this.getDirtyFields())
+				.equal(this.getDirtyFieldsValues())
 			;
-			Map<String, Object> object = new Request()
+			Map<String, Object> object = new HttpRequest(auth)
 				.setUrl(url)
-				.setMethod("PUT")
+				.setMethod(method)
 				.addQuery(query)
 				.getResponse()
 				.getData()
 			;
-			wrapper.hydrate(object);
+			hydrate(object);
 		}
 	}
-	
-	protected void delete() {
-		String url = wrapper.getHref();
-		Map<String, Object> object = new Request()
-			.setUrl(url)
-			.setMethod("DELETE")
-			.getResponse()
-			.getData()
-		;
-		wrapper.setTransient(true);
-	}
-	
-	@Override
-	public String toString() {
-		return this.wrapper.getAllFieldsValues().toString();
-	}
+//	
+//	public void delete() {
+//		String url = this.getUrl();
+//		new HttpRequest(auth)
+//			.setUrl(url)
+//			.setMethod("DELETE")
+//			.getResponse()
+//			.getData()
+//		;
+//	}
 	
 }

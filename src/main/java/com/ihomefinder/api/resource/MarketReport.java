@@ -1,9 +1,15 @@
 package com.ihomefinder.api.resource;
 
+import com.ihomefinder.api.Authentication;
+import com.ihomefinder.api.Fields;
 import com.ihomefinder.api.Resource;
 
 public class MarketReport extends Resource {
 	
+	public MarketReport(Authentication auth) {
+		super(auth);
+	}
+
 	public Integer getId() {
 		return this.getter("id", Integer.class);
 	}
@@ -53,15 +59,19 @@ public class MarketReport extends Resource {
 		return this.getter("market", Market.class);
 	}
 	
+	public MarketReportSubscriptions getMarketReportSubscriptions() {
+		return this.getter("marketReportSubscriptions", MarketReportSubscriptions.class);
+	}
+	
 	@Override
-	protected String[] getFieldNames() {
-		return new String[] {
+	protected Fields getFieldNames() {
+		return new Fields(
 			"id",
 			"marketId",
 			"webPageIntroText",
 			"emailIntroText",
-			"displayInNavigation",
-		};
+			"displayInNavigation"
+		);
 	}
 	
 }

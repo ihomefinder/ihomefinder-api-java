@@ -2,7 +2,9 @@ package com.ihomefinder.api;
 
 public class Constants {
 	
-	public static final String USER_AGENT = "iHomefinder API for Java 0.0.1";
-	public static final String LOGIN_URL = "https://www.idxhome.com/api/v1/client/login.json";
+	public static final String USER_AGENT = "iHomefinder API 0.0.1 for Java";
+	public static final boolean DEBUG = true;
+//	public static final String DOMAIN = "https://www.idxhome.com";
+	public static final String DOMAIN = "http://java.jroncskevitz.ihomefinder.com";
 	
 }
