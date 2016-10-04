@@ -23,20 +23,20 @@ public abstract class Resource {
 
 	protected <T> T getter(String name, Class<T> class_) {
 		if(!isHydratedField(name)) {
-			init(getUrl());
+			this.init(getUrl());
 		}
-		Object value = getHydratedField(name);
+		Object value = getHydratedFieldValue(name);
 		if(!class_.isInstance(value)) {
 			value = ResourceManager.getInstance().getOrCreateInstance(auth, class_, value);
-			setHydratedField(name, value);
+			this.setHydratedField(name, value);
 		}
 		return (T) value;
 	}
 	
 	protected void setter(String name, Object value) {
-		if(getHydratedField(name) == null || (getHydratedField(name) != null && !getHydratedField(name).equals(value))) {
-			addDirtyField(name);
-			setHydratedField(name, value);
+		if(this.getHydratedFieldValue(name) == null || (this.getHydratedFieldValue(name) != null && !this.getHydratedFieldValue(name).equals(value))) {
+			this.addDirtyField(name);
+			this.setHydratedField(name, value);
 		}
 	}
 	
@@ -50,11 +50,11 @@ public abstract class Resource {
 			;
 			hydrate(data);
 			//Hydrate known fields with null. This prevents repeated attempts to hydrate object.
-			if(getFieldNames() != null) {
-				for(String name : getFieldNames()) {
-					if(!isDirtyField(name)) {
+			if(this.getFieldNames() != null) {
+				for(String name : this.getFieldNames()) {
+					if(!this.isDirtyField(name)) {
 						if(!data.containsKey(name)) {
-							setHydratedField(name, null);
+							this.setHydratedField(name, null);
 						}
 					}
 				}
@@ -67,48 +67,48 @@ public abstract class Resource {
 			for(Entry<String, Object> entry : data.entrySet()) {
 				String name = entry.getKey();
 				Object value = entry.getValue();
-				if(!isDirtyField(name)) {
-					setHydratedField(name, value);
+				if(!this.isDirtyField(name)) {
+					this.setHydratedField(name, value);
 				}
 			}
 		}
 	}
 	
 	private Set<String> getDirtyFields() {
-		return dirtyFields;
+		return this.dirtyFields;
 	}
 	
 	private boolean hasDirtyFields() {
-		return !dirtyFields.isEmpty();
+		return !this.dirtyFields.isEmpty();
 	}
 	
 	private void addDirtyField(String name) {
-		dirtyFields.add(name);
+		this.dirtyFields.add(name);
 	}
 	
 	private boolean isDirtyField(String name) {
-		return dirtyFields.contains(name);
+		return this.dirtyFields.contains(name);
 	}
 	
 	private Map<String, Object> getDirtyFieldsValues() {
 		Map<String, Object> results = new HashMap<>();
 		Set<String> names = this.getDirtyFields();
 		for(String name : names) {
-			Object value = this.getHydratedField(name);
+			Object value = this.getHydratedFieldValue(name);
 			results.put(name, value);
 		}
 		return results;
 	}
 	
-	private Set<String> getHydratedFields() {
-		return hydratedFields.keySet();
+	protected Map<String, Object> getHydratedFields() {
+		return this.hydratedFields;
 	}
 	
 	private void setHydratedField(String name, Object value) {
 		this.hydratedFields.put(name, value);
 	}
 	
-	private Object getHydratedField(String name) {
+	private Object getHydratedFieldValue(String name) {
 		Object result = null;
 		if(this.isHydratedField(name)) {
 			result = this.hydratedFields.get(name);
@@ -117,21 +117,11 @@ public abstract class Resource {
 	}
 	
 	private boolean isHydratedField(String name) {
-		return getHydratedFields().contains(name);
-	}
-	
-	protected Map<String, Object> getHydratedFieldsValues() {
-		Map<String, Object> results = new HashMap<>();
-		Set<String> names = this.getHydratedFields();
-		for(String name : names) {
-			Object value = this.getHydratedField(name);
-			results.put(name, value);
-		}
-		return results;
+		return this.getHydratedFields().containsKey(name);
 	}
 	
 	private List<Map<String, Object>> getLinks() {
-		return (List<Map<String, Object>>) this.getHydratedField("links");
+		return (List<Map<String, Object>>) this.getHydratedFieldValue("links");
 	}
 	
 	protected String getUrl() {
@@ -149,7 +139,7 @@ public abstract class Resource {
 	}
 	
 	public boolean isTransient() {
-		return getUrl() == null;
+		return this.getUrl() == null;
 	}
 	
 	protected void saveHelper(String createUrl) {
@@ -165,7 +155,7 @@ public abstract class Resource {
 			}
 			Query query = new Query()
 				.select(this.getDirtyFields())
-				.equal(this.getDirtyFieldsValues())
+				.whereAll(this.getDirtyFieldsValues())
 			;
 			Map<String, Object> object = new HttpRequest(auth)
 				.setUrl(url)
@@ -174,7 +164,7 @@ public abstract class Resource {
 				.getResponse()
 				.getData()
 			;
-			hydrate(object);
+			this.hydrate(object);
 		}
 	}
 //	

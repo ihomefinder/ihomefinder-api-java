@@ -12,15 +12,15 @@ import com.ihomefinder.api.exception.HttpException;
 public class HttpResponse {
 	
 	private final com.mashape.unirest.http.HttpResponse<String> response;
-	private Map<String, Object> object;
+	private Map<String, Object> data;
 	
 	public HttpResponse(com.mashape.unirest.http.HttpResponse<String> response) {
 		this.response = response;
 		String body = response.getBody();
 		try {
 			JSONObject json = new JSONObject(body);
-			object = new JsonObjectToMap(json).getResults();
-			List<Map<String, Object>> errors = (List<Map<String, Object>>) object.get("errors");
+			data = new JsonObjectToMap(json).getResults();
+			List<Map<String, Object>> errors = (List<Map<String, Object>>) data.get("errors");
 			if(errors != null && !errors.isEmpty()) {
 				for(Map<String, Object> error : errors) {
 					Integer code = (Integer) error.get("code");
@@ -35,7 +35,7 @@ public class HttpResponse {
 	}
 	
 	public Map<String, Object> getData() {
-		return this.object;
+		return this.data;
 	}
 	
 }

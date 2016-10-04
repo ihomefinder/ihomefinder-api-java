@@ -37,8 +37,8 @@ public class HttpRequest {
 		return this;
 	}
 	
-	public HttpRequest setPathParameters(Map<String, Object> parameters) {
-		this.pathParameters.putAll(parameters);
+	public HttpRequest setPathParameters(Map<String, Object> pathParameters) {
+		this.pathParameters.putAll(pathParameters);
 		return this;
 	}
 	

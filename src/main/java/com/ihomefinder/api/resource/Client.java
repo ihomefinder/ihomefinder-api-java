@@ -37,10 +37,6 @@ public class Client extends Resource {
 		return this;
 	}
 	
-	public Boards getBoards() {
-		return this.getter("boards", Boards.class);
-	}
-	
 	public Listings getListings() {
 		return this.getter("listings", Listings.class);
 	}

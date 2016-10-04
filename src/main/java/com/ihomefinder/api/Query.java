@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 public class Query implements Cloneable {
@@ -30,21 +29,14 @@ public class Query implements Cloneable {
 		return this;
 	}
 	
-	public Query equal(Map<String, Object> fields) {
+	public Query whereAll(Map<String, Object> fields) {
 		this.where.putAll(fields);
 		return this;
 	}
 	
 	public Query example(Resource resource) {
-		Map<String, Object> fields = resource.getHydratedFieldsValues();
-		for(Entry<String, Object> entry : fields.entrySet()) {
-			String fieldName = entry.getKey();
-			Object fieldValue = entry.getValue();
-			if(fieldValue != null) {
-				this.where(fieldName, fieldValue);
-			}
-
-		}
+		Map<String, Object> fields = resource.getHydratedFields();
+		whereAll(fields);
 		return this;
 	}
 	
