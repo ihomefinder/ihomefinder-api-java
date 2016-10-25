@@ -37,6 +37,15 @@ public class Listing extends Resource {
 		return this;
 	}
 	
+	public ListingAddress getAddress() {
+		return this.getter("address", ListingAddress.class);
+	}
+	
+	public Listing setAddress(ListingAddress address) {
+		this.setter("address", address);
+		return this;
+	}
+	
 	public String getBedrooms() {
 		return this.getter("bedrooms", String.class);
 	}
@@ -66,6 +75,10 @@ public class Listing extends Resource {
 	
 	public Board getBoard() {
 		return this.getter("board", Board.class);
+	}
+	
+	public ListingPhotos getPhotos() {
+		return this.getter("photos", ListingPhotos.class);
 	}
 	
 	@Override
